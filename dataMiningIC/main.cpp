@@ -61,11 +61,11 @@ Individuo generatePopulation(){
     
     Individuo individuo;
     
-    for(int i=0; i<32;i++){
+    for(int i=0; i<32; i++){
         individuo.genes[i].peso = numeroRandomicoDouble(0,1);
         individuo.genes[i].operador
     }
     
-    
+    return Individuo;
     
 }
