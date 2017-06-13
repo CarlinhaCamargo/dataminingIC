@@ -36,9 +36,6 @@ double numeroRandomicoDouble(int inicio, int fim);
 int numeroRandomicoInt(int inicio, int fim);
 Individuo generatePopulation();
 
-
-
-
 /*
  * 
  */
@@ -69,6 +66,5 @@ Individuo generatePopulation(){
         individuo.genes[i].valor = numeroRandomicoInt(0,3);
     }
     
-    return individuo;
-    
+    return individuo;   
 }
