@@ -11,19 +11,9 @@
 #include <time.h> 
 
 #define TAMANHO_POPULACAO 50
-#define TAMANHO_GENES     32
-
-
+#define TAMANHO_GENES     34
 
 using namespace std;
-
-//typedef enum {
-//    MAIOR_IGUAL, 
-//    MENOR, 
-//    IGUAL, 
-//    DIFERENTE
-//}OPERADOR_TYPE;
-
 
 typedef struct {
     double peso;
@@ -33,9 +23,10 @@ typedef struct {
 
 typedef struct {
     Gene genes[TAMANHO_GENES];
-    int historico_familiar;
-    int idade;
+    double aptidao; //tipo nao sei 
 }Individuo;
+
+
 /************ DECLARACAO DAS FUNCOES ************/
 double numeroRandomicoDouble(int inicio, int fim);
 int numeroRandomicoInt(int inicio, int fim);
@@ -71,8 +62,8 @@ void printIndividuo(Individuo individuo){
 //        printf("Gene %d:\n", i);
         printf("[%.2f|%d|%d]  ", individuo.genes[i].peso, individuo.genes[i].operador, individuo.genes[i].valor);
     }
-    printf("\nHistorico: %d", individuo.historico_familiar);
-    printf("\nIdade: %d", individuo.idade);
+//    printf("\nHistorico: %d", individuo.historico_familiar);
+//    printf("\nIdade: %d", individuo.idade);
     printf("\n\n");
 }
 
@@ -83,18 +74,27 @@ void printPopulacao(Individuo *populacao){
     
 }
 
-
 Individuo geraIndividuo(){
     
     Individuo individuo;
     
-    for(int i=0; i<32; i++){
+    for(int i=0; i<TAMANHO_GENES; i++){
+        if (i == 11){ //historico familiar
+            individuo.genes[i].valor = numeroRandomicoInt(0,1);
+        }else{
+            individuo.genes[i].valor = numeroRandomicoInt(0,3);
+        }
+        if (i == 34) { //idade
+            individuo.genes[i].valor = numeroRandomicoInt(0,79);
+        }else{
+            individuo.genes[i].valor = numeroRandomicoInt(0,3);
+        }
+            
+        
         individuo.genes[i].peso = numeroRandomicoDouble(0,1);
         individuo.genes[i].operador = numeroRandomicoInt(0,3);
-        individuo.genes[i].valor = numeroRandomicoInt(0,3);
+        
     }
-    individuo.historico_familiar = numeroRandomicoInt(0,1);
-    individuo.idade = numeroRandomicoInt(0,79);
     
     return individuo;   
 }
@@ -112,5 +112,7 @@ void geraPopulacao(Individuo** populacao){
     
     return; 
 }
+
+
 
 
