@@ -12,9 +12,11 @@
 
 #define TAMANHO_POPULACAO 50
 #define TAMANHO_GENES     34
+#define TAMANHO_BASE_TREINAMENTO 244
+#define TAMANHO_BASE_TESTE 122
 
 using namespace std;
-
+/************ DEFINICAO DOS TIPOS ***************/
 typedef struct {
     double peso;
     int operador;
@@ -23,7 +25,7 @@ typedef struct {
 
 typedef struct {
     Gene genes[TAMANHO_GENES];
-    double aptidao; //tipo nao sei 
+    double aptidao;  
 }Individuo;
 
 
@@ -34,6 +36,15 @@ Individuo geraIndividuo();
 void geraPopulacao(Individuo** populacao);
 void printIndividuo(Individuo individuo);
 void printPopulacao(Individuo *populacao);
+void funcaoAvaliacaoInicial(Individuo individuo);
+
+
+
+/************ VARIAVEIS GLOBAIS *****************/
+
+Individuo baseTreinamento[TAMANHO_BASE_TREINAMENTO]; //tera 2/3 da base = 244
+Individuo baseTeste[TAMANHO_BASE_TESTE];       //tera 1/3 da base 122
+
 
 /*
  * 
@@ -115,4 +126,21 @@ void geraPopulacao(Individuo** populacao){
 
 
 
-
+void funcaoAvaliacaoInicial(Individuo *individuo){
+    
+    /*vai varrer o individuo confrontando com todos os registros da base */
+    int contTP, contTN, contFP, contFN = 0;
+    int SE, SP, aptidao;
+    for(int i=0; i<TAMANHO_BASE_TREINAMENTO; i++){
+        for(int j=0; j<TAMANHO_GENES; j++){
+            //comparar gene i da base com gene j do individuo recebido
+            // atribuir o incremento no devido contador
+            // verificar o caso especial no gene 11 e 34 
+        }
+    } 
+    SE = (contTP + 1) / (contTP + contFN + 1); //o 1 foi adicionado para ajudar na arrancada da convergencia
+    SP = (contTN + 1) / (contTN + contFP + 1);
+    
+    (*individuo).aptidao = SE * SP;
+    return;
+}
