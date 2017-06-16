@@ -6,16 +6,22 @@
  */
 
 #include <cstdlib>
+#include <iostream>
+#include <fstream>
 #include <stdio.h> 
 #include <stdlib.h>
-#include <time.h> 
+#include <time.h>
+#include <vector>
 
 #define TAMANHO_POPULACAO 50
 #define TAMANHO_GENES     34
-#define TAMANHO_BASE_TREINAMENTO 244
-#define TAMANHO_BASE_TESTE 122
+#define TAMANHO_BASE_TREINAMENTO 239
+#define TAMANHO_BASE_TESTE 119
+#define CLASSE_EXECUCAO 1 
 
 using namespace std;
+
+
 /************ DEFINICAO DOS TIPOS ***************/
 typedef struct {
     double peso;
@@ -28,6 +34,17 @@ typedef struct {
     double aptidao;  
 }Individuo;
 
+/*
+ * OPERADOR
+ * 0 == IGUAL
+ * 1 == DIFERENTE
+ * 2 == MAIORIGUAL
+ * 3 == MENOR
+ */
+
+
+enum Fase {FASE_TREINAMENTO, FASE_TESTE};
+
 
 /************ DECLARACAO DAS FUNCOES ************/
 double numeroRandomicoDouble(int inicio, int fim);
@@ -36,14 +53,16 @@ Individuo geraIndividuo();
 void geraPopulacao(Individuo** populacao);
 void printIndividuo(Individuo individuo);
 void printPopulacao(Individuo *populacao);
-void funcaoAvaliacaoInicial(Individuo individuo);
+void funcaoAvaliacaoInicial(Individuo *individuo);
+void leBase(char *base, Fase tipo);
 
 
 
 /************ VARIAVEIS GLOBAIS *****************/
 
-Individuo baseTreinamento[TAMANHO_BASE_TREINAMENTO]; //tera 2/3 da base = 244
-Individuo baseTeste[TAMANHO_BASE_TESTE];       //tera 1/3 da base 122
+vector<Individuo> baseTreinamento; //tera 2/3 da base = 244
+vector<Individuo> baseTeste;       //tera 1/3 da base 122
+
 
 
 /*
@@ -51,10 +70,17 @@ Individuo baseTeste[TAMANHO_BASE_TESTE];       //tera 1/3 da base 122
  */
 int main(int argc, char** argv) {
     srand(time(NULL));
+    
     Individuo *populacao;
     geraPopulacao(&populacao);
-    printPopulacao(populacao);
-    
+    //printPopulacao(populacao);
+    printf("#####################################################################################");
+    char base[] = "trainingBase.txt";
+    leBase(base, FASE_TREINAMENTO);
+    for(int i=0; i<TAMANHO_POPULACAO; i++){
+        funcaoAvaliacaoInicial(&populacao[i]);
+    }
+    //printPopulacao(populacao);
     return 0;
 }
 
@@ -75,6 +101,7 @@ void printIndividuo(Individuo individuo){
     }
 //    printf("\nHistorico: %d", individuo.historico_familiar);
 //    printf("\nIdade: %d", individuo.idade);
+    printf("ap = %.2f ",individuo.aptidao);
     printf("\n\n");
 }
 
@@ -92,10 +119,7 @@ Individuo geraIndividuo(){
     for(int i=0; i<TAMANHO_GENES; i++){
         if (i == 11){ //historico familiar
             individuo.genes[i].valor = numeroRandomicoInt(0,1);
-        }else{
-            individuo.genes[i].valor = numeroRandomicoInt(0,3);
-        }
-        if (i == 34) { //idade
+        }else if(i == 34) { //idade
             individuo.genes[i].valor = numeroRandomicoInt(0,79);
         }else{
             individuo.genes[i].valor = numeroRandomicoInt(0,3);
@@ -129,18 +153,96 @@ void geraPopulacao(Individuo** populacao){
 void funcaoAvaliacaoInicial(Individuo *individuo){
     
     /*vai varrer o individuo confrontando com todos os registros da base */
-    int contTP, contTN, contFP, contFN = 0;
+    int contTP=0, contTN=0, contFP=0, contFN = 0;
     int SE, SP, aptidao;
+    int VI, VB, OP;
+    bool C1, C2, NaoC1, NaoC2;
+    
     for(int i=0; i<TAMANHO_BASE_TREINAMENTO; i++){
         for(int j=0; j<TAMANHO_GENES; j++){
             //comparar gene i da base com gene j do individuo recebido
             // atribuir o incremento no devido contador
             // verificar o caso especial no gene 11 e 34 
+//            (*individuo).genes[j].
+            VB = baseTreinamento[i].genes[j].valor;
+            VI = (*individuo).genes[j].valor;
+                     
+            switch((*individuo).genes[j].operador){
+                case 0:
+                    C1 = (VI == VB);
+                    break;
+                case 1:
+                    C1 = (VI != VB);
+                    break;
+                case 2:
+                    C1 = (VI >= VB);
+                    break;
+                case 3:
+                    C1 = (VI < VB);
+                    break;
+                default:
+                    C1 = false;
+                    break;
+            }
+            C2 = (baseTreinamento[i].aptidao == CLASSE_EXECUCAO);
+            
+
+            if (C1 && C2){
+                contTP++;
+            }else if(C1 && !C2){
+                contFP++;
+            }else if(!C1 && C2){
+                contFN++;
+            }else if(!C1 && !C2){
+                contTN++;
+            }else{ //erro fatal
+                contTP = contTN = contFN = contFP = 0;
+            }
         }
     } 
+//    printf("TP = %d\n", contTP);
+//    printf("TN = %d\n", contTN);
+//    printf("FP = %d\n", contFP);
+//    printf("FN = %d\n", contFN);
+//            
+            
     SE = (contTP + 1) / (contTP + contFN + 1); //o 1 foi adicionado para ajudar na arrancada da convergencia
     SP = (contTN + 1) / (contTN + contFP + 1);
     
     (*individuo).aptidao = SE * SP;
     return;
+}
+
+void leBase(char *base, Fase tipo){
+    
+    /*Na leitura da base, eu to colocando a classe do registro 
+     no campo aptidao, ja que o registro em si eh um individuo*/
+    
+    
+    int i=0, j=0; 
+    int aux;
+    
+    std::ifstream file;
+    file.open(base);
+    
+    if(file.is_open()){
+        while(!file.eof()){
+            Individuo temp;
+            file >> aux;
+            if (j==34){                
+                temp.aptidao = aux;
+                j=0;
+            }else{
+                temp.genes[j].valor = aux;
+                j++;
+            }
+            if(tipo == FASE_TREINAMENTO){
+                baseTreinamento.push_back(temp);
+            }else if(tipo == FASE_TESTE){
+                baseTeste.push_back(temp);
+            }
+        }
+        
+        file.close();
+    }
 }
