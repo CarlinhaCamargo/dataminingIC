@@ -154,7 +154,7 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
     
     /*vai varrer o individuo confrontando com todos os registros da base */
     int contTP=0, contTN=0, contFP=0, contFN = 0;
-    int SE, SP, aptidao;
+    double SE, SP, aptidao;
     int VI, VB, OP;
     bool C1, C2, NaoC1, NaoC2;
     
@@ -200,15 +200,12 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
             }
         }
     } 
-//    printf("TP = %d\n", contTP);
-//    printf("TN = %d\n", contTN);
-//    printf("FP = %d\n", contFP);
-//    printf("FN = %d\n", contFN);
-//            
             
-    SE = (contTP + 1) / (contTP + contFN + 1); //o 1 foi adicionado para ajudar na arrancada da convergencia
-    SP = (contTN + 1) / (contTN + contFP + 1);
+    SE = (contTP + 1.0) / (contTP + contFN + 1.0); //o 1 foi adicionado para ajudar na arrancada da convergencia
+    SP = (contTN + 1.0) / (contTN + contFP + 1.0);
     
+    
+    printf("apt = %f \n", SE*SP);
     (*individuo).aptidao = SE * SP;
     return;
 }
