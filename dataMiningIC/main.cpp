@@ -55,6 +55,7 @@ void printIndividuo(Individuo individuo);
 void printPopulacao(Individuo *populacao);
 void funcaoAvaliacaoInicial(Individuo *individuo);
 void leBase(char *base, Fase tipo);
+void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2);
 
 
 
@@ -80,6 +81,20 @@ int main(int argc, char** argv) {
     for(int i=0; i<TAMANHO_POPULACAO; i++){
         funcaoAvaliacaoInicial(&populacao[i]);
     }
+    
+    
+    //teste crossover 
+    Individuo filho1, filho2;
+    crossover(populacao[0], populacao[1], &filho1, &filho2);
+    printf("pai1 = ");
+    printIndividuo(populacao[0]);
+    printf("pai2 = ");
+    printIndividuo(populacao[1]);
+    printf("filho1 = ");
+    printIndividuo(filho1);
+    printf("filho2 = ");
+    printIndividuo(filho2);
+    
     //printPopulacao(populacao);
     return 0;
 }
@@ -383,5 +398,8 @@ void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *fil
             return;
         }    
     }
+    
+    funcaoAvaliacaoInicial(&(*filho1));
+    funcaoAvaliacaoInicial(&(*filho2));
     return; 
 }
