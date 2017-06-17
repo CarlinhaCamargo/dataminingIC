@@ -111,6 +111,39 @@ void printPopulacao(Individuo *populacao){
     }
     
 }
+void leBase(char *base, Fase tipo){
+    
+    /*Na leitura da base, eu to colocando a classe do registro 
+     no campo aptidao, ja que o registro em si eh um individuo*/
+    
+    
+    int i=0, j=0; 
+    int aux;
+    
+    std::ifstream file;
+    file.open(base);
+    
+    if(file.is_open()){
+        while(!file.eof()){
+            Individuo temp;
+            file >> aux;
+            if (j==34){                
+                temp.aptidao = aux;
+                j=0;
+            }else{
+                temp.genes[j].valor = aux;
+                j++;
+            }
+            if(tipo == FASE_TREINAMENTO){
+                baseTreinamento.push_back(temp);
+            }else if(tipo == FASE_TESTE){
+                baseTeste.push_back(temp);
+            }
+        }
+        
+        file.close();
+    }
+}
 
 Individuo geraIndividuo(){
     
@@ -205,41 +238,150 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
     SP = (contTN + 1.0) / (contTN + contFP + 1.0);
     
     
-    printf("apt = %f \n", SE*SP);
+//    printf("apt = %f \n", SE*SP);
     (*individuo).aptidao = SE * SP;
     return;
 }
 
-void leBase(char *base, Fase tipo){
+
+
+
+
+//void mutacao(Individuo** populacao){
+//    int aux1, aux2,aux3,i,posPeso,posOperador,posValor;
+//    int pes,op,op1,val,val1,ida,ida1;
+//    //como é 30% de mutação arredondei para 11
+//    for(i=0;i<11;i++){
+//          // numero entre 1 e 3 (incluso ambos) sofre mutação
+//         posPeso = numeroRandomicoInt(1,34);
+//         posOperador = numeroRandomicoInt(1,34);
+//         posValor = numeroRandomicoInt(1,34);
+//         aux1 =  numeroRandomicoInt(1,10);
+//         aux2 =  numeroRandomicoInt(1,10);
+//         aux3 =  numeroRandomicoInt(1,10);
+//         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posPeso].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
+//         // mutação peso
+//         if(aux1 <= 3)
+//         {
+//             // 1 significa que vai subtrair 0,1 e 2 significa que vai add 0,1 no peso
+//             pes = numeroRandomicoInt(1,2);
+//             if(pes == 1)
+//                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso - 0.1)
+//             else
+//                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso + 0.1)
+//         }
+//         //mutação simbolo
+//         if(aux2 <= 3)
+//         {
+//             op = numeroRandomicoInt(1,4);
+//             op1 = individuo.genes[posOperador].operador;
+//             while(op == op1)
+//             {
+//                  op = numeroRandomicoInt(1,4);
+//             }
+//             individuo.genes[posOperador].operador = op;
+//         }
+//         // mutação para valor
+//         if(aux3 <= 3)
+//         {
+//             val = numeroRandomicoInt(1,3);
+//             val1 = individuo.genes[posValor].valor;
+//             while(val == val1)
+//             {
+//                  val = numeroRandomicoInt(1,4);
+//             }
+//             individuo.genes[posValor].valor = val;
+//         }
+//         //mutação idade
+//
+//         if(aux3 <= 3)
+//         {
+//             ida = numeroRandomicoInt(1,79);
+//             ida1 = individuo.idade;
+//             while(ida == ida1)
+//             {
+//                  ida = numeroRandomicoInt(1,79);
+//             }
+//             individuo.idade = ida;
+//         }
+//         // mutação historico familiar
+//         if(aux3 <= 3)
+//         {
+//
+//             if(individuo.historico_familiar == 1)
+//                individuo.historico_familiar = 0;
+//             else
+//                individuo.historico_familiar = 1;
+//         }
+//         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posMut].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
+//    }
+//
+//}
+//
+//
+//
+//void roleta_funcionamento(Regra regras[50],float pos[50],float *somaap){ //180 100
+//    int i;
+//    *somaap=0;
+//    //soma dos valores da avaliação
+//    for(i=0;i<50;i++){
+//        *somaap = *somaap + regras[i].aptidao;
+//    }
+//    //cria o vetor com a soma das avaliações para escolher a posição escolhida da roleta
+//    pos[0]=regras[0].aptidao;
+//    for(i=1;i<50;i++){
+//        pos[i]=pos[i-1]+regras[i].aptidao;
+//    }
+//}
+//
+//int roleta(Regra regras[50],float somaap,float pos[50]){
+//    float b;
+//    int i;
+//    int pai;
+//    // a recebe o valor aleatorio entre 0 a somaap;
+//    
+//    float a = somaap;   
+//    b=(((float)rand()/(float)(RAND_MAX)) * a);
+//    
+//    //percorre o vetor de posiçoes para achar a posição escolhida
+//    for(i=0;i<50;i++){
+//        if(b<=pos[i]){
+//            pai=i;
+//            i=50;
+//        }
+//    }
+//    //printf("indice-%d\n",pai);
+//    return pai;
+//}
+
+
+
+void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2){
+    int ponto1, ponto2, maiorPonto, menorPonto;
     
-    /*Na leitura da base, eu to colocando a classe do registro 
-     no campo aptidao, ja que o registro em si eh um individuo*/
+    ponto1 = numeroRandomicoInt(1, TAMANHO_GENES);
+    ponto2 = numeroRandomicoInt(1, TAMANHO_GENES);
+    while(ponto1==ponto2){
+        ponto2 = numeroRandomicoInt(0, TAMANHO_GENES);
+    }    
+    if(ponto1>ponto2){
+        maiorPonto = ponto1;
+        menorPonto = ponto2;
+    }else{
+        maiorPonto = ponto2;
+        menorPonto = ponto1;
+    }    
     
-    
-    int i=0, j=0; 
-    int aux;
-    
-    std::ifstream file;
-    file.open(base);
-    
-    if(file.is_open()){
-        while(!file.eof()){
-            Individuo temp;
-            file >> aux;
-            if (j==34){                
-                temp.aptidao = aux;
-                j=0;
-            }else{
-                temp.genes[j].valor = aux;
-                j++;
-            }
-            if(tipo == FASE_TREINAMENTO){
-                baseTreinamento.push_back(temp);
-            }else if(tipo == FASE_TESTE){
-                baseTeste.push_back(temp);
-            }
-        }
-        
-        file.close();
+    for (int i=0; i<TAMANHO_GENES;i++){
+        if(i<menorPonto || i>=maiorPonto){
+            (*filho1).genes[i] = pai1.genes[i];
+            (*filho2).genes[i] = pai2.genes[i];
+        }else if( i>=menorPonto && i<maiorPonto){
+            (*filho1).genes[i] = pai2.genes[i];
+            (*filho2).genes[i] =  pai1.genes[i];
+        }else{ //erro fatal
+            return;
+        }    
     }
+    return; 
 }
