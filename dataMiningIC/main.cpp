@@ -13,6 +13,7 @@
 #include <time.h>
 #include <vector>
 #include <cmath>
+#include <cstring>
 
 #define TAMANHO_POPULACAO 50
 #define TAMANHO_GENES     34
@@ -20,7 +21,7 @@
 #define TAMANHO_BASE_TESTE 119
 #define CLASSE_EXECUCAO 1 
 #define MUTACAO_QTD_REAL 11
-
+#define TOTAL_GERACOES 50
 using namespace std;
 
 
@@ -52,7 +53,8 @@ enum Fase {FASE_TREINAMENTO, FASE_TESTE};
 double numeroRandomicoDouble(int inicio, int fim);
 int numeroRandomicoInt(int inicio, int fim);
 Individuo geraIndividuo();
-void geraPopulacao(Individuo** populacao);
+void geraPopulacao(Individuo** populacao, int tamanhoP);
+void refazPopulacao(Individuo** populacao, int tamanhoP);
 void printIndividuo(Individuo individuo);
 void printPopulacao(Individuo *populacao);
 void funcaoAvaliacaoInicial(Individuo *individuo);
@@ -62,6 +64,11 @@ void mutacao(Individuo **populacao);
 Individuo torneioEstocastico(Individuo *populacao);
 int roleta(Individuo *individuo);
 int torneio(Individuo *populacao,int pai1,int pai2, int pai3);
+int compare(const void *a, const void *b);
+Individuo selecionaMelhor(Individuo **populacao);
+void reinsercaoElitismo(Individuo **populacao);
+void execucao();
+
 
 /************ VARIAVEIS GLOBAIS *****************/
 
@@ -76,15 +83,8 @@ vector<Individuo> baseTeste;       //tera 1/3 da base 122
 int main(int argc, char** argv) {
     srand(time(NULL));
     
-    Individuo *populacao;
-    geraPopulacao(&populacao);
-    char base[] = "trainingBase.txt";
-    leBase(base, FASE_TREINAMENTO);
-    for(int i=0; i<TAMANHO_POPULACAO; i++){
-        funcaoAvaliacaoInicial(&populacao[i]);
-    }
-   
-    mutacao(&populacao); 
+    execucao();
+    
     
     return 0;
 }
@@ -101,11 +101,9 @@ int numeroRandomicoInt(int inicio, int fim){
 
 void printIndividuo(Individuo individuo){
     for(int i=0; i<TAMANHO_GENES; i++){
-//        printf("Gene %d:\n", i);
         printf("[%.2f|%d|%d]  ", individuo.genes[i].peso, individuo.genes[i].operador, individuo.genes[i].valor);
     }
-//    printf("\nHistorico: %d", individuo.historico_familiar);
-//    printf("\nIdade: %d", individuo.idade);
+
     printf("ap = %.2f ",individuo.aptidao);
     printf("\n\n");
 }
@@ -172,13 +170,21 @@ Individuo geraIndividuo(){
 }
 /* a funcao ira modificar o conteudo de um vetor de individuos. 
  * chamada do metodo deve seguir o formato geraPopulacao(&Individuo[]) */
-void geraPopulacao(Individuo** populacao){
+void geraPopulacao(Individuo** populacao, int tamanhoP){
     *populacao = (Individuo *) malloc(TAMANHO_POPULACAO *(sizeof(Individuo)));
     
     if (*populacao == NULL){
         return;
     }
-    for(int i=0; i<TAMANHO_POPULACAO; i++){
+    for(int i=0; i<tamanhoP; i++){
+        (*populacao)[i] = geraIndividuo();
+    }
+    
+    return; 
+}
+void refazPopulacao(Individuo** populacao, int tamanhoP){
+    printf("refaz\n");
+    for(int i=0; i<tamanhoP; i++){
         (*populacao)[i] = geraIndividuo();
     }
     
@@ -425,4 +431,86 @@ void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *fil
     funcaoAvaliacaoInicial(&(*filho1));
     funcaoAvaliacaoInicial(&(*filho2));
     return; 
+}
+
+
+void reinsercaoElitismo(Individuo **populacao){
+    Individuo melhor = selecionaMelhor(&(*populacao));
+    printf("seleciona \n\n");
+    refazPopulacao(populacao, 49);
+    printf("gerou \n");
+    (*populacao)[50] = melhor;
+    printf("insere aqui \n");
+}
+int compare(const void *a, const void *b){
+    Individuo *a1 =(Individuo *)a ;
+    Individuo *b1 =(Individuo *)b ;
+    
+    if (a1->aptidao > b1->aptidao) return 1;
+    else if (a1->aptidao < b1->aptidao) return -1;
+    else return 0;
+}
+Individuo selecionaMelhor(Individuo **populacao){
+    qsort(*populacao, TAMANHO_POPULACAO, sizeof(Individuo), compare);
+    return (*populacao)[TAMANHO_POPULACAO];
+}
+
+
+void execucao(){
+    int geracoes = TOTAL_GERACOES;
+    bool aptidaoOtima;
+    int aptidaoOtimaIndex = -1;
+    
+    
+    Individuo *populacao;
+    geraPopulacao(&populacao, TAMANHO_POPULACAO); //gera a populacao inicial
+    
+    char base[] = "trainingBase.txt";             // le a base para a funcao de avaliacao
+    leBase(base, FASE_TREINAMENTO); 
+    
+    
+    
+    for(int i=0; i<TAMANHO_POPULACAO; i++){
+        funcaoAvaliacaoInicial(&populacao[i]);    //avalia a populacao inicial
+    }
+    
+    
+    //passo loop: checar se alguma aptidao == 1: se tiver retorna esse elemento e acaba execucao senao continua
+    while(geracoes-- && !aptidaoOtima){  //rodar 50 geracoes ou ate encontrar regra com aptidao 1 
+        for(int i=0; i<TAMANHO_POPULACAO; i++){
+            if(populacao[i].aptidao == 1.0){
+                aptidaoOtima = true;
+                aptidaoOtimaIndex = i;
+                break;
+            }
+        }
+        if(aptidaoOtima){
+            printf("Individuo otimo encontrado:\n ");
+            printIndividuo(populacao[aptidaoOtimaIndex]);
+            return;
+        }
+        
+        
+    //selecionar os elementos dois a dois para o crossover; 
+        Individuo *populacaoNova = (Individuo *) malloc(TAMANHO_POPULACAO *(sizeof(Individuo)));
+        Individuo filho1, filho2;
+        for(int i=0, j=0; i<TAMANHO_POPULACAO/2; j++, i++){
+            crossover(populacao[i],populacao[i+1], &filho1, &filho2);
+            populacaoNova[j] = filho1;
+            populacaoNova[++j] = filho2;   
+        }
+    //mutar os filhos 
+        mutacao(&populacaoNova);
+    
+    //selecionar o melhor e retonar a nova populacao para passo loop. 
+        reinsercaoElitismo(&populacaoNova);
+        
+        memcpy(&populacao, &populacaoNova, sizeof(populacao));
+        
+        aptidaoOtima = false;
+    }
+    
+    //geracoes acabaram, entao seleciona a melhor regra
+    Individuo regraFinal = selecionaMelhor(&populacao);
+    printIndividuo(regraFinal);
 }
