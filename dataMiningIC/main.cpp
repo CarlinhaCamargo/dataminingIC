@@ -18,6 +18,7 @@
 #define TAMANHO_BASE_TREINAMENTO 239
 #define TAMANHO_BASE_TESTE 119
 #define CLASSE_EXECUCAO 1 
+#define MUTACAO_QTD_REAL 11
 
 using namespace std;
 
@@ -56,7 +57,7 @@ void printPopulacao(Individuo *populacao);
 void funcaoAvaliacaoInicial(Individuo *individuo);
 void leBase(char *base, Fase tipo);
 void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2);
-
+void mutacao(Individuo **populacao);
 
 
 /************ VARIAVEIS GLOBAIS *****************/
@@ -84,16 +85,24 @@ int main(int argc, char** argv) {
     
     
     //teste crossover 
-    Individuo filho1, filho2;
-    crossover(populacao[0], populacao[1], &filho1, &filho2);
-    printf("pai1 = ");
-    printIndividuo(populacao[0]);
-    printf("pai2 = ");
-    printIndividuo(populacao[1]);
-    printf("filho1 = ");
-    printIndividuo(filho1);
-    printf("filho2 = ");
-    printIndividuo(filho2);
+//    Individuo filho1, filho2;
+//    crossover(populacao[0], populacao[1], &filho1, &filho2);
+//    printf("pai1 = ");
+//    printIndividuo(populacao[0]);
+//    printf("pai2 = ");
+//    printIndividuo(populacao[1]);
+//    printf("filho1 = ");
+//    printIndividuo(filho1);
+//    printf("filho2 = ");
+//    printIndividuo(filho2);
+    
+    printPopulacao(populacao);
+    printf("**************************************MUTACAO ***************************************************\n\n");
+    mutacao(&populacao);
+    
+    printPopulacao(populacao);
+    
+    
     
     //printPopulacao(populacao);
     return 0;
@@ -262,76 +271,108 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
 
 
 
-//void mutacao(Individuo** populacao){
-//    int aux1, aux2,aux3,i,posPeso,posOperador,posValor;
-//    int pes,op,op1,val,val1,ida,ida1;
-//    //como é 30% de mutação arredondei para 11
-//    for(i=0;i<11;i++){
-//          // numero entre 1 e 3 (incluso ambos) sofre mutação
-//         posPeso = numeroRandomicoInt(1,34);
-//         posOperador = numeroRandomicoInt(1,34);
-//         posValor = numeroRandomicoInt(1,34);
-//         aux1 =  numeroRandomicoInt(1,10);
-//         aux2 =  numeroRandomicoInt(1,10);
-//         aux3 =  numeroRandomicoInt(1,10);
-//         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posPeso].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
-//         // mutação peso
-//         if(aux1 <= 3)
-//         {
-//             // 1 significa que vai subtrair 0,1 e 2 significa que vai add 0,1 no peso
-//             pes = numeroRandomicoInt(1,2);
-//             if(pes == 1)
-//                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso - 0.1)
-//             else
-//                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso + 0.1)
-//         }
-//         //mutação simbolo
-//         if(aux2 <= 3)
-//         {
-//             op = numeroRandomicoInt(1,4);
-//             op1 = individuo.genes[posOperador].operador;
-//             while(op == op1)
-//             {
-//                  op = numeroRandomicoInt(1,4);
-//             }
-//             individuo.genes[posOperador].operador = op;
-//         }
-//         // mutação para valor
-//         if(aux3 <= 3)
-//         {
-//             val = numeroRandomicoInt(1,3);
-//             val1 = individuo.genes[posValor].valor;
-//             while(val == val1)
-//             {
-//                  val = numeroRandomicoInt(1,4);
-//             }
-//             individuo.genes[posValor].valor = val;
-//         }
-//         //mutação idade
-//
-//         if(aux3 <= 3)
-//         {
-//             ida = numeroRandomicoInt(1,79);
-//             ida1 = individuo.idade;
-//             while(ida == ida1)
-//             {
-//                  ida = numeroRandomicoInt(1,79);
-//             }
-//             individuo.idade = ida;
-//         }
-//         // mutação historico familiar
-//         if(aux3 <= 3)
-//         {
-//
-//             if(individuo.historico_familiar == 1)
-//                individuo.historico_familiar = 0;
-//             else
-//                individuo.historico_familiar = 1;
-//         }
-//         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posMut].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
-//    }
-//
-//}
+void mutacao(Individuo **populacao){
+    
+    int aux1, aux2,aux3,i,posPeso,posOperador,posValor;
+    int pes,op,op1,val,val1,ida,ida1;
+    
+    int populacaoMutacaoSelecionada[MUTACAO_QTD_REAL];
+    int temp;
+    bool repetido = false;
+    Individuo individuo;
+    
+   
+    i=0;
+    while(i<MUTACAO_QTD_REAL){
+        temp = numeroRandomicoInt(0,34);
+        repetido = false;
+        for(int j=0;j<MUTACAO_QTD_REAL; j++){
+            if(temp == populacaoMutacaoSelecionada[j]){
+                repetido = true;
+                break;
+            }
+        }
+        if(!repetido){
+            populacaoMutacaoSelecionada[i++] = temp;       
+        }
+    }
+    
+    for(i=0;i<MUTACAO_QTD_REAL;i++){
+        individuo = (*populacao)[populacaoMutacaoSelecionada[i]];
+
+          // numero entre 1 e 3 (incluso ambos) sofre mutação
+         posPeso = numeroRandomicoDouble(0,1);
+         posOperador = numeroRandomicoInt(0,3);
+         posValor = numeroRandomicoInt(0,3);
+         aux1 =  numeroRandomicoInt(1,10);
+         aux2 =  numeroRandomicoInt(1,10);
+         aux3 =  numeroRandomicoInt(1,10);
+         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posPeso].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
+         // mutação peso
+         if(aux1 <= 3)
+         {
+             // 1 significa que vai subtrair 0,1 e 2 significa que vai add 0,1 no peso
+             pes = numeroRandomicoInt(1,2);
+             if(pes == 1){
+                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso - 0.1);
+             }else{
+                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso + 0.1);
+             }
+         }
+         //mutação simbolo
+         if(aux2 <= 3)
+         {
+             op = numeroRandomicoInt(1,4);
+             op1 = individuo.genes[posOperador].operador;
+             while(op == op1)
+             {
+                  op = numeroRandomicoInt(1,4);
+             }
+             individuo.genes[posOperador].operador = op;
+         }
+         // mutação para valor
+         if(aux3 <= 3)
+         {
+             val = numeroRandomicoInt(1,3);
+             val1 = individuo.genes[posValor].valor;
+             while(val == val1)
+             {
+                  val = numeroRandomicoInt(1,4);
+             }
+             individuo.genes[posValor].valor = val;
+         }
+
+
+         //mutação idade
+         if(populacaoMutacaoSelecionada[i] == 11){
+            if(aux3 <= 3)
+            {
+                ida = numeroRandomicoInt(1,79);
+                ida1 = individuo.genes[i].valor;
+                while(ida == ida1)
+                {
+                     ida = numeroRandomicoInt(0,79);
+                }
+                individuo.genes[i].valor = ida;
+            }
+            
+         }
+         else if(populacaoMutacaoSelecionada[i] == 34){// mutação historico familiar
+
+            if(aux3 <= 3)
+            {
+                if(individuo.genes[i].valor == 1)
+                   individuo.genes[i].valor = 0;
+                else
+                   individuo.genes[i].valor = 1;
+            }
+         }
+        (*populacao)[populacaoMutacaoSelecionada[i]] = individuo;
+         
+         //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posMut].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
+    }
+   
+}
 //
 //
 //
