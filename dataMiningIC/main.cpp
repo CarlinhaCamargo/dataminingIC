@@ -489,7 +489,7 @@ void execucao(){
         
         vector<Individuo> populacaoNova;
         Individuo filho1, filho2, pai1, pai2;
-        for(int i=0; i<TAMANHO_POPULACAO/2; i++){
+        for(int i=0; i<TAMANHO_POPULACAO; i+=2){
 //            pai1 = torneioEstocastico(populacao);
 //            pai2 = torneioEstocastico(populacao);
 ////             printf("crossover will happen\n");
