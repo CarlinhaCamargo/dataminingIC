@@ -23,10 +23,11 @@
 #define TAMANHO_GENES     34
 #define TAMANHO_BASE_TREINAMENTO 239
 #define TAMANHO_BASE_TESTE 119
-#define CLASSE_EXECUCAO 1 
+#define CLASSE_EXECUCAO 1
 #define MUTACAO_QTD_REAL 15
 #define TOTAL_GERACOES 50
 #define PORCENTAGEM_CROSSOVER 100
+#define EXECUCOES 1
 
 using namespace std;
 
@@ -91,7 +92,7 @@ vector<Individuo> baseTeste;       //tera 1/3 da base 122
  */
 int main(int argc, char** argv) {
 //    srand(time(NULL));
-    for(int i=0; i<10; i++)
+    for(int i=0; i<EXECUCOES; i++)
        execucao();
     
     
@@ -121,7 +122,7 @@ void printIndividuo(Individuo individuo){
         printf("[%.2f|%d|%d]  ", individuo.genes[i].peso, individuo.genes[i].operador, individuo.genes[i].valor);
     }
 
-    printf("ap = %.2f ",individuo.aptidao);
+    printf("ap = %.3f ",individuo.aptidao);
     printf("\n\n");
 }
 void printPopulacao(vector<Individuo> populacao){
@@ -214,7 +215,7 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
             //comparar gene i da base com gene j do individuo recebido
             // atribuir o incremento no devido contador
             // verificar o caso especial no gene 11 e 34 
-//            (*individuo).genes[j].
+
             VB = baseTreinamento[i].genes[j].valor;
             VI = (*individuo).genes[j].valor;
                      
@@ -258,6 +259,67 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
     
 //    printf("apt = %f \n", SE*SP);
     (*individuo).aptidao = SE * SP;
+    return;
+}
+
+
+void funcaoAvaliacaoFinal(Individuo *individuoFinal){
+    leBase("testingBase.txt", FASE_TESTE); 
+    /*vai varrer o individuo confrontando com todos os registros da base */
+    int contTP=0, contTN=0, contFP=0, contFN = 0;
+    double SE, SP, aptidao;
+    int VI, VB, OP;
+    bool C1, C2, NaoC1, NaoC2;
+    
+    for(int i=0; i<TAMANHO_BASE_TESTE; i++){
+        for(int j=0; j<TAMANHO_GENES; j++){
+            //comparar gene i da base com gene j do individuo recebido
+            // atribuir o incremento no devido contador
+            // verificar o caso especial no gene 11 e 34 
+//            (*individuo).genes[j].
+            VB = baseTreinamento[i].genes[j].valor;
+            VI = (*individuoFinal).genes[j].valor;
+                     
+            switch((*individuoFinal).genes[j].operador){
+                case 0:
+                    C1 = (VI == VB);
+                    break;
+                case 1:
+                    C1 = (VI != VB);
+                    break;
+                case 2:
+                    C1 = (VI >= VB);
+                    break;
+                case 3:
+                    C1 = (VI < VB);
+                    break;
+                default:
+                    C1 = false;
+                    break;
+            }
+            C2 = (baseTeste[i].aptidao == CLASSE_EXECUCAO);
+            
+
+            if (C1 && C2){
+                contTP++;
+            }else if(C1 && !C2){
+                contFP++;
+            }else if(!C1 && C2){
+                contFN++;
+            }else if(!C1 && !C2){
+                contTN++;
+            }else{ //erro fatal
+                contTP = contTN = contFN = contFP = 0;
+            }
+        }
+    } 
+            
+    SE = (contTP + 1.0) / (contTP + contFN + 1.0); //o 1 foi adicionado para ajudar na arrancada da convergencia
+    SP = (contTN + 1.0) / (contTN + contFP + 1.0);
+    
+    
+//    printf("apt = %f \n", SE*SP);
+    (*individuoFinal).aptidao = SE * SP;
     return;
 }
 
@@ -374,38 +436,13 @@ int torneioEstocastico(vector<Individuo> populacao){
     for(int i=0;i<TAMANHO_POPULACAO;i++){
         somaAptidao += populacao[i].aptidao;
     }
-    
-//    do{
-        sorteio1 = roleta(populacao, somaAptidao);
-        sorteio2 = roleta(populacao, somaAptidao);
-        sorteio3 = roleta(populacao, somaAptidao);
-        
-//        printf("s1 = %d\t s2 = %d\t s3 = %d\n", sorteio1, sorteio2, sorteio3);
-        selecionado = torneio(populacao, sorteio1, sorteio2, sorteio3); 
-//        printf("selecionado = %d\n", selecionado);
-//        if(paisSelecionados.size() == 0 ){
-//            paisSelecionados.push_back(selecionado);
-//            return populacao[selecionado];
-//        }
-//        if(find(paisSelecionados.begin(), paisSelecionados.end(), selecionado) != paisSelecionados.end()){
-//            //contains
-//            repetido = true;
-////            for(int i=0; i<paisSelecionados.size(); i++)
-////                printf("%d - ", paisSelecionados[i]);
-////            printf("\tselecionado = %d\n ", selecionado);
-////            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n");
-//        }else{
-//            //not contains
-//            repetido = false;            
-//            paisSelecionados.push_back(selecionado);
-//            
-//        }
-       
-//    }while(repetido);
-    
-//    for(int i=0; i<paisSelecionados.size(); i++){
-//        printf("%d - ", paisSelecionados[i]);
-//    }
+
+    sorteio1 = roleta(populacao, somaAptidao);
+    sorteio2 = roleta(populacao, somaAptidao);
+    sorteio3 = roleta(populacao, somaAptidao);
+
+    selecionado = torneio(populacao, sorteio1, sorteio2, sorteio3); 
+
     return selecionado;
 }
 
@@ -413,59 +450,18 @@ int roleta(vector<Individuo> populacao, double somaAptidao){
     
     double somaSelecao=0;	
     double random;
-     uniform_real_distribution<double> distribuicaoRandom(0.0, somaAptidao);
-    // for (int i = 0; i < CROSSOVER_PERCENTAGE; i++)
-    // {
-    // 	printf("populacao %d\t",i );
-    // 	printVector(population[i], INDIVIDUAL_SIZE+1);
-    // }
-    // printf("\n");
+//    uniform_real_distribution<double> distribuicaoRandom(0.0, somaAptidao);
 
-//    random = numeroRandomicoDouble(0,((int) somaAptidao)+1);
-    random = distribuicaoRandom(generator);
+//    random = distribuicaoRandom(generator);
+    random = numeroRandomicoDouble(0.0, somaAptidao);
     for(int i=0; i<populacao.size(); i++){
         somaSelecao+= populacao[i].aptidao;
         if(random<somaSelecao){
             return i;
         }
-    }
-//    for (j=TAMANHO_POPULACAO-1; j>0; j--){
-//        somaSelecao+=populacao[j-1].aptidao;
-//        if (somaSelecao >= random) {
-//                //printVector(population[j], INDIVIDUAL_SIZE+1);
-//            return j;
-//        }
-//    }
-//    int i, f;
-//    //fracao da roleta f
-//    for(i=0, f=0; i<TAMANHO_POPULACAO; i++, f++){
-//        if (random <=0) 
-//            return i;
-//        else
-//            random -= f;
-//    }   return i;
-//    
-    
+    }   
 }
 
-//// retorna a posição do item selecionado, chamar 3x para obter os 3 itens e ver qual o melhor deles
-//int roleta(vector<Individuo> individuo, acumulado, ){
-//    double pos[TAMANHO_GENES];
-//    double sorteio;
-//    int contador = 0;
-//    pos[0] = individuo[0].aptidao;
-//    
-//    for(int i=1;i<TAMANHO_POPULACAO;i++){
-//      individuo[i].aptidao =  individuo[i].aptidao + individuo[i -1].aptidao; 
-//       pos[i] = individuo[i].aptidao;
-//    }
-//    sorteio = numeroRandomicoDouble(0, int(pos[TAMANHO_GENES]));
-//    while(sorteio >= individuo[contador].aptidao )
-//    {
-//       contador++;
-//    }
-//    return contador;
-//}
 
 // retorna o melhor elemento dos 3 que a roleta filtrou
 int torneio(vector<Individuo> populacao,int pai1,int pai2, int pai3){
@@ -589,10 +585,9 @@ void execucao(){
     for(int i=0; i<TAMANHO_POPULACAO; i++){
         funcaoAvaliacaoInicial(&populacao[i]);    //avalia a populacao inicial
     }
-//    printf("************************************************AVALIACAO INICIAL ******************************* \n");
-//    printPopulacao(populacao);
-//    
-//    
+    
+    
+
     
     //passo loop: checar se alguma aptidao == 1: se tiver retorna esse elemento e acaba execucao senao continua
     while(geracoes-- && !aptidaoOtima){  //rodar 50 geracoes ou ate encontrar regra com aptidao 1 
@@ -677,23 +672,31 @@ void execucao(){
     //selecionar o melhor e retonar a nova populacao para passo loop. 
         reinsercaoElitismo(populacao,populacaoNova);
         
-//         printf("reinsercao done\n");
-
-        
-//        copy(populacaoNova, populacaoNova+TAMANHO_POPULACAO, populacao.begin());
-//        memcpy(&populacao, &populacaoNova, sizeof(populacao));
-//        printf("################################AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII##########################################\n\n\n\n");
         populacao = populacaoNova;
-//        printf("reinsercao done\n");
-//        printPopulacao(populacao);
-//        printf("################################AFTEEEEEEEEEEEEEEER##########################################\n\n\n\n");
         
         aptidaoOtima = false;
         
+        Individuo melhor = selecionaMelhor(populacao);
+        printf("O Melhor \n");
+        printIndividuo(melhor);
+        
+        
     }
-    //geracoes acabaram, entao seleciona a melhor regra
-    Individuo regraFinal = selecionaMelhor(populacao);
-    printf("regra final: \n");
-    printIndividuo(regraFinal);
+    
+//    double aptidaoTreinamento, aptidaoTeste;
+//    //geracoes acabaram, entao seleciona a melhor regra
+//    Individuo regraFinal = selecionaMelhor(populacao);
+//    printf("regra final: \n");
+//    printIndividuo(regraFinal);
+//    aptidaoTreinamento = regraFinal.aptidao;
+//    
+//    funcaoAvaliacaoFinal(&regraFinal);
+//    printf("BASE DE TESTE AVALIACAO\n");
+//    printIndividuo(regraFinal);
+//    aptidaoTeste = regraFinal.aptidao;
+//    
+//    printf("\nDiferenca entre treinamento e teste = %.3f\n", aptidaoTreinamento - aptidaoTeste);
+//    
+//    
 
 }
