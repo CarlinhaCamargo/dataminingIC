@@ -60,7 +60,7 @@ enum Fase {FASE_TREINAMENTO, FASE_TESTE};
 
 
 /************ DECLARACAO DAS FUNCOES ************/
-double numeroRandomicoDouble(int inicio, int fim);
+double numeroRandomicoDouble(double inicio, double fim);
 int numeroRandomicoInt(int inicio, int fim);
 Individuo geraIndividuo();
 void geraPopulacao(vector<Individuo>& populacao, int tamanhoP);
@@ -90,9 +90,9 @@ vector<Individuo> baseTeste;       //tera 1/3 da base 122
  * 
  */
 int main(int argc, char** argv) {
-    srand(time(NULL));
-    
-    execucao();
+//    srand(time(NULL));
+    for(int i=0; i<10; i++)
+       execucao();
     
     
     return 0;
@@ -100,12 +100,13 @@ int main(int argc, char** argv) {
 
 
 
-double numeroRandomicoDouble(int inicio, int fim){
-//    uniform_real_distribution<double> distribuicaoRandom((double)inicio, (double)fim);
+double numeroRandomicoDouble(double inicio, double fim){
+//    uniform_real_distribution<double> distribuicaoRandom((double)inicio, 0.99999999);
 ////    fim = fim*100;
 //    double num = distribuicaoRandom(generator);
 //    double num = double(generator()%(fim + 1 - inicio)+inicio);
-    double num = (((double)rand()*(fim - inicio) / RAND_MAX) + inicio);
+    double end = fim - 0.00001;
+    double num = (((double)generator()*(end - inicio) / RAND_MAX) + inicio);
     return num;
     
 }
@@ -113,7 +114,7 @@ int numeroRandomicoInt(int inicio, int fim){
 //    uniform_int_distribution<int> distribuicaoInt(inicio, fim );
 //    return distribuicaoInt(generator);
 //    return generator()%(fim + 1 - inicio)+inicio;
-    return rand()%(fim+1-inicio)+inicio;
+    return generator()%(fim+1-inicio)+inicio;
 }
 void printIndividuo(Individuo individuo){
     for(int i=0; i<TAMANHO_GENES; i++){
@@ -176,7 +177,7 @@ Individuo geraIndividuo(){
             individuo.genes[i].valor = numeroRandomicoInt(0,3);
         }
         
-        individuo.genes[i].peso = numeroRandomicoDouble(0,1);
+        individuo.genes[i].peso = numeroRandomicoDouble(0.0,1.0);
         individuo.genes[i].operador = numeroRandomicoInt(0,3);
         
     }
@@ -290,7 +291,7 @@ void mutacao(vector<Individuo>& populacao){
         individuo = populacao[populacaoMutacaoSelecionada[i]];
 
           // numero entre 1 e 3 (incluso ambos) sofre mutação
-         posPeso = numeroRandomicoDouble(0,1);
+         posPeso = numeroRandomicoDouble(0.0,1.0);
          posOperador = numeroRandomicoInt(0,3);
          posValor = numeroRandomicoInt(0,3);
          aux1 =  numeroRandomicoInt(1,10);
@@ -684,7 +685,7 @@ void execucao(){
 //        printf("################################AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII##########################################\n\n\n\n");
         populacao = populacaoNova;
 //        printf("reinsercao done\n");
-        printPopulacao(populacao);
+//        printPopulacao(populacao);
 //        printf("################################AFTEEEEEEEEEEEEEEER##########################################\n\n\n\n");
         
         aptidaoOtima = false;
