@@ -5,6 +5,7 @@
  * Created on 10 de Junho de 2017, 13:37
  */
 
+
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -15,16 +16,24 @@
 #include <cmath>
 #include <cstring>
 #include <algorithm>
+#include <chrono>
+
 
 #define TAMANHO_POPULACAO 50
 #define TAMANHO_GENES     34
 #define TAMANHO_BASE_TREINAMENTO 239
 #define TAMANHO_BASE_TESTE 119
 #define CLASSE_EXECUCAO 1 
-#define MUTACAO_QTD_REAL 11
+#define MUTACAO_QTD_REAL 15
 #define TOTAL_GERACOES 50
+#define PORCENTAGEM_CROSSOVER 100
+
 using namespace std;
 
+unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+std::minstd_rand0 generator(seed);
+
+//default_random_engine generator;
 
 /************ DEFINICAO DOS TIPOS ***************/
 typedef struct {
@@ -55,14 +64,15 @@ double numeroRandomicoDouble(int inicio, int fim);
 int numeroRandomicoInt(int inicio, int fim);
 Individuo geraIndividuo();
 void geraPopulacao(vector<Individuo>& populacao, int tamanhoP);
+Individuo retornaIndividuo(vector<Individuo> populacao, int index);
 void printIndividuo(Individuo individuo);
 void printPopulacao(vector<Individuo> populacao);
 void funcaoAvaliacaoInicial(Individuo *individuo);
 void leBase(char *base, Fase tipo);
 void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2);
 void mutacao(vector<Individuo>& populacao);
-Individuo torneioEstocastico(vector<Individuo> populacao);
-int roleta(vector<Individuo> individuo);
+int torneioEstocastico(vector<Individuo> populacao);
+int roleta(vector<Individuo> populacao, double somaAptidao);
 int torneio(vector<Individuo> populacao,int pai1,int pai2, int pai3);
 bool compare(Individuo a, Individuo b);
 Individuo selecionaMelhor(vector<Individuo>& populacao);
@@ -74,8 +84,7 @@ void execucao();
 
 vector<Individuo> baseTreinamento; //tera 2/3 da base = 244
 vector<Individuo> baseTeste;       //tera 1/3 da base 122
-
-
+ 
 
 /*
  * 
@@ -89,16 +98,23 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+
+
 double numeroRandomicoDouble(int inicio, int fim){
-    fim = fim*100;
-    int num = rand()%(fim+1-inicio)+inicio;
-    return num/100.0;
+//    uniform_real_distribution<double> distribuicaoRandom((double)inicio, (double)fim);
+////    fim = fim*100;
+//    double num = distribuicaoRandom(generator);
+//    double num = double(generator()%(fim + 1 - inicio)+inicio);
+    double num = (((double)rand()*(fim - inicio) / RAND_MAX) + inicio);
+    return num;
     
 }
 int numeroRandomicoInt(int inicio, int fim){
+//    uniform_int_distribution<int> distribuicaoInt(inicio, fim );
+//    return distribuicaoInt(generator);
+//    return generator()%(fim + 1 - inicio)+inicio;
     return rand()%(fim+1-inicio)+inicio;
 }
-
 void printIndividuo(Individuo individuo){
     for(int i=0; i<TAMANHO_GENES; i++){
         printf("[%.2f|%d|%d]  ", individuo.genes[i].peso, individuo.genes[i].operador, individuo.genes[i].valor);
@@ -179,6 +195,10 @@ void geraPopulacao(vector<Individuo>& populacao, int tamanhoP){
     return; 
 }
 
+Individuo retornaIndividuo(vector<Individuo> populacao, int index){
+    return populacao[index];
+}
+
 
 void funcaoAvaliacaoInicial(Individuo *individuo){
     
@@ -245,7 +265,7 @@ void mutacao(vector<Individuo>& populacao){
     int aux1, aux2,aux3,i,posPeso,posOperador,posValor;
     int pes,op,op1,val,val1,ida,ida1;
     
-    int populacaoMutacaoSelecionada[MUTACAO_QTD_REAL];
+    vector<int> populacaoMutacaoSelecionada(MUTACAO_QTD_REAL, -1);
     int temp;
     bool repetido = false;
     Individuo individuo;
@@ -253,7 +273,7 @@ void mutacao(vector<Individuo>& populacao){
    
     i=0;
     while(i<MUTACAO_QTD_REAL){
-        temp = numeroRandomicoInt(0,34);
+        temp = numeroRandomicoInt(0,MUTACAO_QTD_REAL);
         repetido = false;
         for(int j=0;j<MUTACAO_QTD_REAL; j++){
             if(temp == populacaoMutacaoSelecionada[j]){
@@ -265,7 +285,7 @@ void mutacao(vector<Individuo>& populacao){
             populacaoMutacaoSelecionada[i++] = temp;       
         }
     }
-    
+
     for(i=0;i<MUTACAO_QTD_REAL;i++){
         individuo = populacao[populacaoMutacaoSelecionada[i]];
 
@@ -342,37 +362,109 @@ void mutacao(vector<Individuo>& populacao){
     }
 }
 
-Individuo torneioEstocastico(vector<Individuo> populacao){
+int torneioEstocastico(vector<Individuo> populacao){
     
     int sorteio1, sorteio2, sorteio3, selecionado;
+    double somaAptidao;
+    bool repetido = false;
+    int prob=0, sumProb=0;
+//    double acumulado, pos[TAMANHO_POPULACAO];
+//    
+    for(int i=0;i<TAMANHO_POPULACAO;i++){
+        somaAptidao += populacao[i].aptidao;
+    }
     
-    sorteio1 = roleta(populacao);
-    sorteio2 = roleta(populacao);
-    sorteio3 = roleta(populacao);
+//    do{
+        sorteio1 = roleta(populacao, somaAptidao);
+        sorteio2 = roleta(populacao, somaAptidao);
+        sorteio3 = roleta(populacao, somaAptidao);
+        
+//        printf("s1 = %d\t s2 = %d\t s3 = %d\n", sorteio1, sorteio2, sorteio3);
+        selecionado = torneio(populacao, sorteio1, sorteio2, sorteio3); 
+//        printf("selecionado = %d\n", selecionado);
+//        if(paisSelecionados.size() == 0 ){
+//            paisSelecionados.push_back(selecionado);
+//            return populacao[selecionado];
+//        }
+//        if(find(paisSelecionados.begin(), paisSelecionados.end(), selecionado) != paisSelecionados.end()){
+//            //contains
+//            repetido = true;
+////            for(int i=0; i<paisSelecionados.size(); i++)
+////                printf("%d - ", paisSelecionados[i]);
+////            printf("\tselecionado = %d\n ", selecionado);
+////            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n");
+//        }else{
+//            //not contains
+//            repetido = false;            
+//            paisSelecionados.push_back(selecionado);
+//            
+//        }
+       
+//    }while(repetido);
     
-    selecionado = torneio(populacao, sorteio1, sorteio2, sorteio3);
-    
-    return populacao[selecionado];
+//    for(int i=0; i<paisSelecionados.size(); i++){
+//        printf("%d - ", paisSelecionados[i]);
+//    }
+    return selecionado;
 }
 
-// retorna a posição do item selecionado, chamar 3x para obter os 3 itens e ver qual o melhor deles
-int roleta(vector<Individuo> individuo){
-    double pos[TAMANHO_GENES];
-    double sorteio;
-    int contador = 0;
-    pos[0] = individuo[0].aptidao;
+int roleta(vector<Individuo> populacao, double somaAptidao){
     
-    for(int i=1;i<TAMANHO_POPULACAO;i++){
-      individuo[i].aptidao =  individuo[i].aptidao + individuo[i -1].aptidao; 
-       pos[i] = individuo[i].aptidao;
+    double somaSelecao=0;	
+    double random;
+     uniform_real_distribution<double> distribuicaoRandom(0.0, somaAptidao);
+    // for (int i = 0; i < CROSSOVER_PERCENTAGE; i++)
+    // {
+    // 	printf("populacao %d\t",i );
+    // 	printVector(population[i], INDIVIDUAL_SIZE+1);
+    // }
+    // printf("\n");
+
+//    random = numeroRandomicoDouble(0,((int) somaAptidao)+1);
+    random = distribuicaoRandom(generator);
+    for(int i=0; i<populacao.size(); i++){
+        somaSelecao+= populacao[i].aptidao;
+        if(random<somaSelecao){
+            return i;
+        }
     }
-    sorteio = numeroRandomicoDouble(0, int(pos[TAMANHO_GENES]));
-    while(sorteio >= individuo[contador].aptidao )
-    {
-       contador++;
-    }
-    return contador;
+//    for (j=TAMANHO_POPULACAO-1; j>0; j--){
+//        somaSelecao+=populacao[j-1].aptidao;
+//        if (somaSelecao >= random) {
+//                //printVector(population[j], INDIVIDUAL_SIZE+1);
+//            return j;
+//        }
+//    }
+//    int i, f;
+//    //fracao da roleta f
+//    for(i=0, f=0; i<TAMANHO_POPULACAO; i++, f++){
+//        if (random <=0) 
+//            return i;
+//        else
+//            random -= f;
+//    }   return i;
+//    
+    
 }
+
+//// retorna a posição do item selecionado, chamar 3x para obter os 3 itens e ver qual o melhor deles
+//int roleta(vector<Individuo> individuo, acumulado, ){
+//    double pos[TAMANHO_GENES];
+//    double sorteio;
+//    int contador = 0;
+//    pos[0] = individuo[0].aptidao;
+//    
+//    for(int i=1;i<TAMANHO_POPULACAO;i++){
+//      individuo[i].aptidao =  individuo[i].aptidao + individuo[i -1].aptidao; 
+//       pos[i] = individuo[i].aptidao;
+//    }
+//    sorteio = numeroRandomicoDouble(0, int(pos[TAMANHO_GENES]));
+//    while(sorteio >= individuo[contador].aptidao )
+//    {
+//       contador++;
+//    }
+//    return contador;
+//}
 
 // retorna o melhor elemento dos 3 que a roleta filtrou
 int torneio(vector<Individuo> populacao,int pai1,int pai2, int pai3){
@@ -388,6 +480,41 @@ int torneio(vector<Individuo> populacao,int pai1,int pai2, int pai3){
         return pai3;
     }
 }
+
+//// retorna a posição do item selecionado, chamar 3x para obter os 3 itens e ver qual o melhor deles
+//// retorna a posição do item selecionado, chamar 3x para obter os 3 itens e ver qual o melhor deles, passar uma flag para verificar se é o pai 1 ou 2 se for
+//// o pai 2 evitar repetições e passar para a variavel pai1 o valor do mesmo e variavel flag 2 no caso do pai 1 passar variavel 1 para flag e 0 para pai1
+//int roleta(double acumulado, double pos[], vector<int>& pais){
+//    float b;
+//    
+//    int pai;
+//    printf("oi\n\n");
+//    b=(((float)rand()/(float)(RAND_MAX)) * acumulado);
+//    printf("oi %.2f\n\n", b);
+//    for(int i=0;i<TAMANHO_POPULACAO;i++){
+//        if(i != 0)
+//        {
+//            if(b<=pos[i] && b != pais[0]){
+//                pai=i;
+//                i=TAMANHO_POPULACAO;
+//            }
+//        }
+//        else
+//        {
+//             if(b<=pos[i] && b != pais[i - 1]){
+//                pai=i;
+//                i=TAMANHO_POPULACAO;
+//            }
+//        }
+//
+//    }
+//    //printf("indice-%d\n",pai);
+//    return pai;
+//
+//}
+//
+
+
 
 void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2){
     int ponto1, ponto2, maiorPonto, menorPonto;
@@ -488,30 +615,53 @@ void execucao(){
         //selecionar os elementos dois a dois para o crossover; 
         
         vector<Individuo> populacaoNova;
+//        vector<int> aux;
+//        vector<int> &paisSelecionados = aux;
+        int pai1Index, pai2Index;
         Individuo filho1, filho2, pai1, pai2;
         for(int i=0; i<TAMANHO_POPULACAO; i+=2){
-//            pai1 = torneioEstocastico(populacao);
-//            pai2 = torneioEstocastico(populacao);
-////             printf("crossover will happen\n");
-//
+
+            pai1Index = torneioEstocastico(populacao);
+//            printf("\nP size= %ld\n", paisSelecionados.size());
+//            printIndividuo(pai1);
+//            printf("\nAAAAA = %d \t&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n",i);
+            pai2Index = torneioEstocastico(populacao);
+//            printf("\nP size= %ld\n", paisSelecionados.size());
+//            printIndividuo(pai2);
+//            printf("crossover will happen\n");
+
 //            printf("pai1 = \n ");
 //            printIndividuo(pai1);
 //            printf("pai2 = \n ");
 //            printIndividuo(pai2);
+////            
+            while (pai1Index == pai2Index){
+                
+                pai2Index = torneioEstocastico(populacao);
+            }            
+            
+            pai1 = retornaIndividuo(populacao, pai1Index);
+            pai2 = retornaIndividuo(populacao, pai2Index);
+            
 //            
-//            
-//            crossover(pai1,pai2, &filho1, &filho2);
-////             printf("crossover done\n");
+            crossover(pai1,pai2, &filho1, &filho2);
+//            crossover(populacao[i], populacao[i+1], &filho1, &filho2);
+//             printf("crossover done\n");
 //            printf("filho1 = \n ");
 //            printIndividuo(filho1);
 //            printf("filho2 = \n ");
 //            printIndividuo(filho2);
             
-            crossover(populacao[i], populacao[i+1], &filho1, &filho2);
             
             populacaoNova.push_back(filho1);
             populacaoNova.push_back(filho2);   
         }
+//        
+//        printf("\nP size= %ld\n", paisSelecionados.size());
+//        for(int i=0; i<paisSelecionados.size(); i++){
+//            printf("%d - ",paisSelecionados[i] );
+//        }
+        
 //        printf("crossover done\n");
 //        printPopulacao(populacaoNova);
 
@@ -533,6 +683,8 @@ void execucao(){
 //        memcpy(&populacao, &populacaoNova, sizeof(populacao));
 //        printf("################################AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII##########################################\n\n\n\n");
         populacao = populacaoNova;
+//        printf("reinsercao done\n");
+        printPopulacao(populacao);
 //        printf("################################AFTEEEEEEEEEEEEEEER##########################################\n\n\n\n");
         
         aptidaoOtima = false;
