@@ -238,8 +238,9 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
             }
             C2 = (baseTreinamento[i].aptidao == CLASSE_EXECUCAO);
             
-
-            if (C1 && C2){
+           
+        }
+         if (C1 && C2){
                 contTP++;
             }else if(C1 && !C2){
                 contFP++;
@@ -250,9 +251,10 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
             }else{ //erro fatal
                 contTP = contTN = contFN = contFP = 0;
             }
-        }
     } 
             
+    printf("SOMA = %d\n", contFN+contFP+contTN+contTP);
+    printf("BASE = %ld\n", baseTreinamento.size());
     SE = (contTP + 1.0) / (contTP + contFN + 1.0); //o 1 foi adicionado para ajudar na arrancada da convergencia
     SP = (contTN + 1.0) / (contTN + contFP + 1.0);
     
@@ -314,8 +316,8 @@ void funcaoAvaliacaoFinal(Individuo *individuoFinal){
         }
     } 
             
-    SE = (contTP + 1.0) / (contTP + contFN + 1.0); //o 1 foi adicionado para ajudar na arrancada da convergencia
-    SP = (contTN + 1.0) / (contTN + contFP + 1.0);
+    SE = (contTP ) / (contTP + contFN ); //o 1 foi adicionado para ajudar na arrancada da convergencia
+    SP = (contTN ) / (contTN + contFP );
     
     
 //    printf("apt = %f \n", SE*SP);
