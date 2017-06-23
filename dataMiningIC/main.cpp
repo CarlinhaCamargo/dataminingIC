@@ -8,13 +8,14 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <stdio.h> 
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
 #include <cmath>
-#include <cstring>
+#include <string>
 #include <algorithm>
 #include <chrono>
 
@@ -23,7 +24,7 @@
 #define TAMANHO_GENES     34
 #define TAMANHO_BASE_TREINAMENTO 239
 #define TAMANHO_BASE_TESTE 119
-#define CLASSE_EXECUCAO 3  
+#define CLASSE_EXECUCAO 2
 #define MUTACAO_QTD_REAL 15
 #define TOTAL_GERACOES 50
 #define PORCENTAGEM_CROSSOVER 100
@@ -34,7 +35,7 @@ using namespace std;
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::minstd_rand0 generator(seed);
 
-//default_random_engine generator;
+default_random_engine generatorDistribuicao;
 
 /************ DEFINICAO DOS TIPOS ***************/
 typedef struct {
@@ -49,17 +50,6 @@ typedef struct {
     int classe;
 }Individuo;
 
-/*
- * OPERADOR
- * 0 == IGUAL
- * 1 == DIFERENTE
- * 2 == MAIORIGUAL
- * 3 == MENOR
- */
-
-
-enum Fase {FASE_TREINAMENTO, FASE_TESTE};
-
 
 /************ DECLARACAO DAS FUNCOES ************/
 double numeroRandomicoDouble(double inicio, double fim);
@@ -72,7 +62,7 @@ void printPopulacao(vector<Individuo> populacao);
 void funcaoAvaliacaoInicial(Individuo *individuo);
 //void funcaoAvaliacaoGeracao(Individuo *individuo);
 void funcaoAvaliacaoFinal(Individuo *individuo);
-void leBase(char *base, Fase tipo);
+void leBase(char *base, int tipo);
 void crossover(Individuo pai1, Individuo pai2, Individuo *filho1, Individuo *filho2);
 void mutacao(vector<Individuo>& populacao);
 int torneioEstocastico(vector<Individuo> populacao);
@@ -102,7 +92,7 @@ int main(int argc, char** argv) {
 }
 
 double numeroRandomicoDouble(double inicio, double fim){
-//    uniform_real_distribution<double> distribuicaoRandom((double)inicio, 0.99999999);
+//    uniform_real_distribution<double> distribuicaoRandom(inicio, fim);
 ////    fim = fim*100;
 //    double num = distribuicaoRandom(generator);
 //    double num = double(generator()%(fim + 1 - inicio)+inicio);
@@ -114,7 +104,6 @@ double numeroRandomicoDouble(double inicio, double fim){
 int numeroRandomicoInt(int inicio, int fim){
 //    uniform_int_distribution<int> distribuicaoInt(inicio, fim );
 //    return distribuicaoInt(generator);
-//    return generator()%(fim + 1 - inicio)+inicio;
     return generator()%(fim+1-inicio)+inicio;
 }
 void printIndividuo(Individuo individuo){
@@ -122,55 +111,58 @@ void printIndividuo(Individuo individuo){
         printf("[%.2f|%d|%d]  ", individuo.genes[i].peso, individuo.genes[i].operador, individuo.genes[i].valor);
     }
 
-    printf("ap = %.3f ",individuo.aptidao);
-    printf("\n\n");
-    printf("classe = %d\n\n", individuo.classe);
+    printf("ap = %.3f\n\n",individuo.aptidao);
+   
+//    printf("classe = %d\n\n", individuo.classe);
 }
 void printPopulacao(vector<Individuo> populacao){
-    for(int i=0; i<TAMANHO_POPULACAO; i++){
+    for(int i=0; i<populacao.size(); i++){
         printIndividuo(populacao[i]);
     }
-    
-        
 }
-void leBase(char *base, Fase tipo){
-    
-    /*Na leitura da base, eu to colocando a classe do registro 
-     no campo aptidao, ja que o registro em si eh um individuo*/
-    
+void leBase(char *base, int tipo){
     
     int i=0, j=0; 
     int aux;
     
-    std::ifstream file;
+    ifstream file;
+    string line;
+    
     file.open(base);
     
     if(file.is_open()){
-        while(!file.eof()){
-            Individuo temp;
-            file >> aux;
-            
-            if (j==34){                
-//                printIndividuo(temp);
-//                printf("%d\n",aux);
-                
-                temp.classe = aux;
-                j=0;
-            }else{
-                temp.genes[j].valor = aux;
+        Individuo temp;
+        while(getline(file, line) ){
+            istringstream iss(line);
+            j=0;
+            while(iss >> aux && j<35){
+                if(j==34){
+                    temp.classe = aux;
+                    temp.aptidao = 0.0;
+                    temp.genes[j].valor = 0;
+                }else{
+                    temp.genes[j].valor = aux;
+                }
                 j++;
+                
             }
-            if(tipo == FASE_TREINAMENTO){
+//            printIndividuo(temp);
+//            printf("%s\n", FASE_TREINAMENTO);
+            if(tipo == 0){
+               
                 baseTreinamento.push_back(temp);
-//                printf("%f\n\n", temp.classe);
-            }else if(tipo == FASE_TESTE){
+//                printf("%d\n\n", temp.classe);
+            }else if(tipo == 1){
                 baseTeste.push_back(temp);
             }
         }
-//        printf("TREINAMENTO\n");
-//        if(baseTeste.size()>0)  printPopulacao(baseTreinamento);
-//        printf("TESTE\n");
-//        if(baseTeste.size()>0) printPopulacao(baseTeste);
+//        printf("TREINAMENTO %d\n", baseTreinamento.size());
+//        if(baseTreinamento.size()>0)  
+//            printPopulacao(baseTreinamento);
+//        printf("TESTE%d\n", baseTeste.size());
+//        if(baseTeste.size()>0) 
+//            printPopulacao(baseTeste);
+        
         file.close();
     }
 }
@@ -192,6 +184,7 @@ Individuo geraIndividuo(){
         individuo.genes[i].operador = numeroRandomicoInt(0,3);
         
     }
+    individuo.aptidao = 0.0;
     individuo.classe = 1000;      
     return individuo;   
 }
@@ -212,26 +205,33 @@ Individuo retornaIndividuo(vector<Individuo> populacao, int index){
     return populacao[index];
 }
 
-
 void funcaoAvaliacaoInicial(Individuo *individuo){
     
     /*vai varrer o individuo confrontando com todos os registros da base */
     int contTP=0, contTN=0, contFP=0, contFN = 0;
     double SE, SP, aptidao;
     int VI, VB;
-    bool C1=false, C2;
+    bool C1, C2;
 //    printf("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&BASE TREINAMENTO\n");
-//    printPopulacao(baseTreinamento);
-//    
+////    printPopulacao(baseTreinamento);
+//    printf("POPULACAO\n");
+//    printIndividuo(*individuo);
     for(int i=0; i<TAMANHO_BASE_TREINAMENTO; i++){
+        C1=false;
+        C2 = false;
         for(int j=0; j<TAMANHO_GENES; j++){
             //comparar gene i da base com gene j do individuo recebido
             // atribuir o incremento no devido contador
             // verificar o caso especial no gene 11 e 34 NAO FIZ ISSO 
 
+            
             VB = baseTreinamento[i].genes[j].valor;
             VI = (*individuo).genes[j].valor;
-            if( (*individuo).genes[j].peso > 0.7){         
+            if(j == 11 || j == 34){ //historico ou idade
+                (*individuo).genes[j].peso = 0.0;
+            }
+            if( (*individuo).genes[j].peso > 0.7){  
+
                 switch((*individuo).genes[j].operador){
                     case 0:
                         C1 = (VI == VB);
@@ -285,154 +285,83 @@ void funcaoAvaliacaoInicial(Individuo *individuo){
     }else{
         SP = (double)(contTN+1) / 1.0;
     }  
-    
-//    printf("SE = %f \n", SE);
-//    printf("SP = %f \n", SP);
-//    printf("apt = %f \n", SE*SP);
 
     (*individuo).aptidao = SE * SP;
-//        printIndividuo((*individuo));
+
     return;
 }
 
-//void funcaoAvaliacaoGeracao(Individuo *individuo){
-//    
-//    /*vai varrer o individuo confrontando com todos os registros da base */
-//    int contTP=0, contTN=0, contFP=0, contFN = 0;
-//    double SE, SP, aptidao;
-//    int VI, VB;
-//    bool C1=false, C2;
-//    
-//    for(int i=0; i<TAMANHO_BASE_TREINAMENTO; i++){
-//        for(int j=0; j<TAMANHO_GENES; j++){
-//            //comparar gene i da base com gene j do individuo recebido
-//            // atribuir o incremento no devido contador
-//            // verificar o caso especial no gene 11 e 34 
-//
-//            VB = baseTreinamento[i].genes[j].valor;
-//            VI = (*individuo).genes[j].valor;
-//            if( (*individuo).genes[j].peso > 0.7){         
-//                switch((*individuo).genes[j].operador){
-//                    case 0:
-//                        C1 = (VI == VB);
-//                        break;
-//                    case 1:
-//                        C1 = (VI != VB);
-//                        break;
-//                    case 2:
-//                        C1 = (VI >= VB);
-//                        break;
-//                    case 3:
-//                        C1 = (VI < VB);
-//                        break;
-//                    default:
-//                        C1 = false;
-//                        break;
-//                }
-//            }
-//            C2 = (baseTreinamento[i].classe == CLASSE_EXECUCAO);
-//        }
-//        if (C1 && C2){
-//            contTP++;
-//        }else if(C1 && !C2){
-//            contFP++;
-//        }else if(!C1 && C2){
-//            contFN++;
-//        }else if(!C1 && !C2){
-//            contTN++;
-//        }else{ //erro fatal
-//            contTP = contTN = contFN = contFP = 0;
-//        }
-//    } 
-//            
-////    printf("SOMA = %d\n", contFN+contFP+contTN+contTP);
-////    printf("BASE = %ld\n", baseTreinamento.size());
-////    printf("TP = %d\t TN = %d\t FN = %d\t FP = %d\n", contTP, contTN, contFN, contFP);
-//    if ((contTP + contFN) != 0) { 
-//        SE = (double)contTP / (double)(contTP + contFN); //o 1 foi adicionado para ajudar na arrancada da convergencia
-//    }else{
-//         SE = (double)contTP / 1.0;
-//    }
-//    
-//    if((contTN+contFP) != 0){
-//        SP = (double)contTN / (double)(contTN + contFP);
-//    }else{
-//        SP = (double)contTN / 1.0;
-//    }
-////    printf("SE = %f \n", SE);
-////    printf("SP = %f \n", SP);
-////    printf("apt = %f \n", SE*SP);
-////    printf("apt = %f \n", SE*SP);
-//    (*individuo).aptidao = SE * SP;
-////        printIndividuo((*individuo));
-//    return;
-//}
-
-
-
 void funcaoAvaliacaoFinal(Individuo *individuoFinal){
     
-    leBase("testingBase.txt", FASE_TESTE); 
+    leBase("testingBase.txt", 1); 
     /*vai varrer o individuo confrontando com todos os registros da base */
     int contTP=0, contTN=0, contFP=0, contFN = 0;
-    double SE, SP, aptidao;
-    int VI, VB, OP;
-    bool C1=false, C2;
+    double SE, SP;
+    int VI, VB;
+    bool C1, C2;    
     
     for(int i=0; i<TAMANHO_BASE_TESTE; i++){
+        C1 = false;
+        C2 = false;
         for(int j=0; j<TAMANHO_GENES; j++){
             //comparar gene i da base com gene j do individuo recebido
             // atribuir o incremento no devido contador
             // verificar o caso especial no gene 11 e 34 
 //            (*individuo).genes[j].
-            VB = baseTreinamento[i].genes[j].valor;
+            VB = baseTeste[i].genes[j].valor;
             VI = (*individuoFinal).genes[j].valor;
-                     
-            switch((*individuoFinal).genes[j].operador){
-                case 0:
-                    C1 = (VI == VB);
-                    break;
-                case 1:
-                    C1 = (VI != VB);
-                    break;
-                case 2:
-                    C1 = (VI >= VB);
-                    break;
-                case 3:
-                    C1 = (VI < VB);
-                    break;
-                default:
-                    C1 = false;
-                    break;
+            if(j == 11 || j == 34){ //historico ou idade
+                (*individuoFinal).genes[j].peso = 0.0;
+            }
+//            printf("peso = %f\n",  (*individuo).genes[j].peso);
+            
+            if( (*individuoFinal).genes[j].peso > 0.7){  
+//                printf("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOI\n");
+                switch((*individuoFinal).genes[j].operador){
+                    case 0:
+                        C1 = (VI == VB);
+                        break;
+                    case 1:
+                        C1 = (VI != VB);
+                        break;
+                    case 2:
+                        C1 = (VI >= VB);
+                        break;
+                    case 3:
+                        C1 = (VI < VB);
+                        break;
+                    default:
+                        C1 = false;
+                        break;
+                }
             }
             C2 = (baseTeste[i].classe == CLASSE_EXECUCAO);
-
         }
-        
-            if (C1 && C2){
-                contTP++;
-            }else if(C1 && !C2){
-                contFP++;
-            }else if(!C1 && C2){
-                contFN++;
-            }else if(!C1 && !C2){
-                contTN++;
-            }else{ //erro fatal
-                contTP = contTN = contFN = contFP = 0;
-            }
+
+        if (C1 && C2){
+            contTP++;
+        }else if(C1 && !C2){
+            contFP++;
+        }else if(!C1 && C2){
+            contFN++;
+        }else if(!C1 && !C2){
+            contTN++;
+        }else{ //erro fatal
+            contTP = contTN = contFN = contFP = 0;
+        }
     } 
 //    printf("SOMA = %d\n", contFN+contFP+contTN+contTP);
 //    printf("TP = %d\t TN = %d\t FN = %d\t FP = %d\n", contTP, contTN, contFN, contFP);
 //    printf("BASE = %ld\n", baseTeste.size());
     
     if ((contTP + contFN) != 0) { 
-        SE = (double)(contTP+1) / (double)(contTP + contFN + 1); //o 1 foi adicionado para ajudar na arrancada da convergencia
+        SE = (double)(contTP+1) / (double)(contTP + contFN+1); //o 1 foi adicionado para ajudar na arrancada da convergencia
     }else{
          SE = (double)(contTP+1) / 1.0;
     }
     
     if((contTN+contFP) != 0){
-        SP = (double)(contTN+1) / (double)(contTN + contFP + 1);
+        SP = (double)(contTN+1) / (double)(contTN + contFP +1);
     }else{
         SP = (double)(contTN+1) / 1.0;
     }  
@@ -476,40 +405,40 @@ void mutacao(vector<Individuo>& populacao){
          posPeso = numeroRandomicoDouble(0.0,1.0);
          posOperador = numeroRandomicoInt(0,3);
          posValor = numeroRandomicoInt(0,3);
-         aux1 =  numeroRandomicoInt(1,10);
-         aux2 =  numeroRandomicoInt(1,10);
-         aux3 =  numeroRandomicoInt(1,10);
+         aux1 =  numeroRandomicoInt(0,9);
+         aux2 =  numeroRandomicoInt(0,9);
+         aux3 =  numeroRandomicoInt(0,9);
          //printf("[%.2f|%d|%d] \n\n ", individuo.genes[posPeso].peso, individuo.genes[posMut].operador, individuo.genes[posMut].valor);
          // mutação peso
-         if(aux1 <= 3)
+         if(aux1 < 3)
          {
              // 1 significa que vai subtrair 0,1 e 2 significa que vai add 0,1 no peso
              pes = numeroRandomicoInt(1,2);
              if(pes == 1){
-                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso - 0.1);
+                individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso<0.0)? 0.0 :(individuo.genes[posPeso].peso - 0.1);
              }else{
                 individuo.genes[posPeso].peso = (individuo.genes[posPeso].peso + 0.1);
              }
          }
          //mutação simbolo
-         if(aux2 <= 3)
+         if(aux2 < 3)
          {
-             op = numeroRandomicoInt(1,4);
+             op = numeroRandomicoInt(0,3);
              op1 = individuo.genes[posOperador].operador;
              while(op == op1)
              {
-                  op = numeroRandomicoInt(1,4);
+                  op = numeroRandomicoInt(0,3);
              }
              individuo.genes[posOperador].operador = op;
          }
          // mutação para valor
-         if(aux3 <= 3)
+         if(aux3 < 3)
          {
-             val = numeroRandomicoInt(1,3);
+             val = numeroRandomicoInt(0,3);
              val1 = individuo.genes[posValor].valor;
              while(val == val1)
              {
-                  val = numeroRandomicoInt(1,4);
+                  val = numeroRandomicoInt(0,3);
              }
              individuo.genes[posValor].valor = val;
          }
@@ -570,10 +499,11 @@ int roleta(vector<Individuo> populacao, double somaAptidao){
     
     double somaSelecao=0;	
     double random;
-//    uniform_real_distribution<double> distribuicaoRandom(0.0, somaAptidao);
+    
+    uniform_real_distribution<double> distribuicaoRandom(0.0, somaAptidao);
 
-//    random = distribuicaoRandom(generator);
-    random = numeroRandomicoDouble(0.0, somaAptidao);
+    random = distribuicaoRandom(generator);
+//    random = numeroRandomicoDouble(0.0, somaAptidao);
     int i=0;
     while(somaSelecao<random){
         i++;
@@ -581,13 +511,7 @@ int roleta(vector<Individuo> populacao, double somaAptidao){
         somaSelecao += populacao[i].aptidao;
     }
     return i;
-    
-//    for(int i=0; i<populacao.size(); i++){
-//        somaSelecao+= populacao[i].aptidao;
-//        if(random<somaSelecao){
-//            return i;
-//        }
-//    }   
+  
 }
 
 
@@ -648,8 +572,6 @@ void reinsercaoElitismo(vector<Individuo> populacaoAntiga, vector<Individuo>& po
     Individuo melhor = selecionaMelhor(populacaoAntiga);
 //    printf("selecionou \n");
     
-   
-  
     populacaoNova.erase(populacaoNova.begin());
     populacaoNova.push_back(melhor);
 }
@@ -669,17 +591,17 @@ void execucao(){
     bool aptidaoOtima = false;
     int aptidaoOtimaIndex = -1;
     
-    
     vector<Individuo> populacao;
     geraPopulacao(populacao, TAMANHO_POPULACAO); //gera a populacao inicial
     
     char base[] = "trainingBase.txt";             // le a base para a funcao de avaliacao
-    leBase(base, FASE_TREINAMENTO); 
+    leBase(base, 0); 
+//    printPopulacao(baseTreinamento);
     
     for(int i=0; i<TAMANHO_POPULACAO; i++){
         funcaoAvaliacaoInicial(&populacao[i]);    //avalia a populacao inicial
     }
-    
+//    printPopulacao(populacao);
     //passo loop: checar se alguma aptidao == 1: se tiver retorna esse elemento e acaba execucao senao continua
     while(geracoes<TOTAL_GERACOES && !aptidaoOtima){  //rodar 50 geracoes ou ate encontrar regra com aptidao 1 
 //        printf("execucao\n");
@@ -715,8 +637,8 @@ void execucao(){
 //        vector<int> &paisSelecionados = aux;
         int pai1Index, pai2Index;
         Individuo filho1, filho2, pai1, pai2;
-        filho1.classe = 7777;
-        filho2.classe = 6666;
+        filho1.classe = 0;
+        filho2.classe = 0;
         for(int i=0; i<TAMANHO_POPULACAO; i+=2){
             pai1Index = torneioEstocastico(populacao);
 //            printf("\nP size= %ld\n", paisSelecionados.size());
@@ -732,10 +654,11 @@ void execucao(){
 //            printf("pai2 = \n ");
 //            printIndividuo(pai2);
 ////            
+//            printf("p1 = %d \tp2 = %d\n", pai1Index, pai2Index);
             while (pai1Index == pai2Index){
                 
                 pai2Index = torneioEstocastico(populacao);
-                printf("pai2 = %d\n", pai2Index);
+//                printf("pai2 = %d\n", pai2Index);
             }            
             
             pai1 = retornaIndividuo(populacao, pai1Index);
@@ -744,7 +667,7 @@ void execucao(){
 //            
             crossover(pai1,pai2, &filho1, &filho2);
 //            crossover(populacao[i], populacao[i+1], &filho1, &filho2);
-//             printf("crossover done\n");
+//            printf("crossover done\n");
 //            printf("filho1 = \n ");
 //            printIndividuo(filho1);
 //            printf("filho2 = \n ");
@@ -777,8 +700,8 @@ void execucao(){
         populacao = populacaoNova;
         
         aptidaoOtima = false;
-        printf("################ POPULACAO ##############################\n");;
-        printPopulacao(populacao);
+//        printf("################ POPULACAO ##############################\n");;
+//        printPopulacao(populacao);
         
 //        Individuo melhor = selecionaMelhor(populacao);
 //        printf("O Melhor \n");
@@ -800,10 +723,7 @@ void execucao(){
     aptidaoTeste = regraFinal.aptidao;
     
     printf("\nDiferenca entre treinamento e teste = %.3f\n", aptidaoTreinamento - aptidaoTeste);
-    
+//    
     baseTreinamento.clear();
     baseTeste.clear();
-    
-           
-
 }
