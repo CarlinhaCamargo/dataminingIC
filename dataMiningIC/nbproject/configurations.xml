@@ -26,7 +26,10 @@
                    displayName="Important Files"
                    projectFiles="false"
                    kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>../Important Files /Base de dados.ods</itemPath>
       <itemPath>Makefile</itemPath>
+      <itemPath>../Resultados</itemPath>
+      <itemPath>../Important Files /tabelaAtributos.txt</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
@@ -38,6 +41,9 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
+        <ccTool>
+          <standard>8</standard>
+        </ccTool>
       </compileType>
       <item path="in.txt" ex="false" tool="3" flavor2="0">
       </item>
